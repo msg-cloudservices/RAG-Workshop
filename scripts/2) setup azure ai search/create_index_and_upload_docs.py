@@ -1,53 +1,56 @@
-from dotenv import load_dotenv, dotenv_values
+# Import necessary libraries
+from dotenv import load_dotenv
 import os
-from langchain_openai import AzureChatOpenAI, AzureOpenAI, AzureOpenAIEmbeddings
-from langchain.embeddings import OpenAIEmbeddings
 from azure.core.credentials import AzureKeyCredential
-from azure.search.documents import SearchClient, SearchIndexingBufferedSender
+from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
-from azure.search.documents.models import (
-    QueryAnswerType,
-    QueryCaptionType,
-    QueryCaptionResult,
-    QueryAnswerResult,
-    SemanticErrorMode,
-    SemanticErrorReason,
-    SemanticSearchResultsType,
-    QueryType,
-    VectorizedQuery,
-    VectorQuery,
-    VectorFilterMode,
-)
 from azure.search.documents.indexes.models import (
-    ExhaustiveKnnAlgorithmConfiguration,
-    ExhaustiveKnnParameters,
     SearchIndex,
-    SearchField,
-    SearchFieldDataType,
     SimpleField,
     SearchableField,
+    SearchField,
+    SearchFieldDataType,
+    VectorSearch,
+    HnswAlgorithmConfiguration,
+    HnswParameters,
+    ExhaustiveKnnAlgorithmConfiguration,
+    ExhaustiveKnnParameters,
+    VectorSearchAlgorithmKind,
+    VectorSearchAlgorithmMetric,
+    VectorSearchProfile,
     SemanticConfiguration,
     SemanticPrioritizedFields,
     SemanticField,
     SemanticSearch,
-    HnswAlgorithmConfiguration,
-    HnswParameters,
-    VectorSearch,
-    VectorSearchAlgorithmConfiguration,
-    VectorSearchAlgorithmKind,
-    VectorSearchAlgorithmMetric,
-    VectorSearchProfile,
 )
+import glob
+import json
 
-config = dotenv_values(".env")
-service_endpoint = config.get("AZURE_SEARCH_SERVICE_ENDPOINT")
-index_name = config.get("AZURE_SEARCH_INDEX_NAME")
-key = config.get("AZURE_SEARCH_ADMIN_KEY")
+# Load environment variables
+load_dotenv()
+print("Environment variables loaded.")
+
+# Retrieve necessary configuration values from environment variables
+service_endpoint = os.getenv("AZURE_SEARCH_SERVICE_ENDPOINT")
+index_name = os.getenv("AZURE_SEARCH_INDEX_NAME")
+key = os.getenv("AZURE_SEARCH_ADMIN_KEY")
+
+# Validate that necessary configurations are not None
+if not all([service_endpoint, index_name, key]):
+    raise ValueError(
+        "One or more environment variables (endpoint, index name, key) are missing."
+    )
+
+# Set up the credential for Azure services
 credential = AzureKeyCredential(key)
 
-# Configure Search Indexer
+# Initialize the SearchIndexClient
 index_client = SearchIndexClient(endpoint=service_endpoint, credential=credential)
+print(f"SearchIndexClient initialized for endpoint: {service_endpoint}")
+
+# Define the schema of the index with fields
 fields = [
+    # Define a simple field that acts as a unique identifier for each document
     SimpleField(
         name="id",
         type=SearchFieldDataType.String,
@@ -56,6 +59,7 @@ fields = [
         filterable=True,
         facetable=True,
     ),
+    # Define fields that will be searchable
     SearchableField(name="line", type=SearchFieldDataType.String),
     SearchableField(
         name="filename",
@@ -63,6 +67,7 @@ fields = [
         filterable=True,
         facetable=True,
     ),
+    # Define a field to store vector embeddings for vector search
     SearchField(
         name="embedding",
         type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
@@ -72,7 +77,7 @@ fields = [
     ),
 ]
 
-# Configure Vector Search Config
+# Configure vector search settings
 vector_search = VectorSearch(
     algorithms=[
         HnswAlgorithmConfiguration(
@@ -95,8 +100,7 @@ vector_search = VectorSearch(
     ],
     profiles=[
         VectorSearchProfile(
-            name="myHnswProfile",
-            algorithm_configuration_name="myHnsw",
+            name="myHnswProfile", algorithm_configuration_name="myHnsw"
         ),
         VectorSearchProfile(
             name="myExhaustiveKnnProfile",
@@ -105,6 +109,7 @@ vector_search = VectorSearch(
     ],
 )
 
+# Set up semantic search configuration
 semantic_config = SemanticConfiguration(
     name="my-semantic-config",
     prioritized_fields=SemanticPrioritizedFields(
@@ -113,15 +118,33 @@ semantic_config = SemanticConfiguration(
     ),
 )
 
-# Create the semantic settings with config
-semantic_search = SemanticSearch(configurations=[semantic_config])
-
-# Create the search index with the semantic settings
+# Combine all configurations into the search index definition
 index = SearchIndex(
     name=index_name,
     fields=fields,
     vector_search=vector_search,
-    semantic_search=semantic_search,
+    semantic_search=SemanticSearch(configurations=[semantic_config]),
 )
+# Create or update the index on Azure Search
 result = index_client.create_or_update_index(index)
-print(f"{result.name} created")
+print(f"{result.name} created or updated successfully.")
+
+# Preparing to upload documents to the index
+cwd = os.getcwd()
+relative_path = "../output"
+absolute_path = os.path.abspath(os.path.join(cwd, relative_path))
+
+# Load JSON documents from specified directory
+files = []
+for file in glob.glob("../output/*.json"):
+    filepath = os.path.abspath(os.path.join(absolute_path, file))
+    with open(filepath, "r") as infile:
+        files.extend(json.load(infile))
+
+# Initialize the SearchClient
+search_client = SearchClient(
+    endpoint=service_endpoint, index_name=index_name, credential=credential
+)
+# Upload documents to the index
+result = search_client.upload_documents(documents=files)
+print(f'Uploaded {len(files)} documents to the index "{index_name}".')
