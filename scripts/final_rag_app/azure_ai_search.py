@@ -27,6 +27,7 @@ key = os.getenv("AZURE_SEARCH_ADMIN_KEY")
 
 #initiate AI Searchservice
 service_endpoint = os.getenv("AZURE_SEARCH_SERVICE_ENDPOINT")
+service_name = os.getenv("AZURE_SEARCH_NAME")
 cogkey = os.getenv("AZURE_SEARCH_ADMIN_KEY")
 credential = AzureKeyCredential(key)
 index_name = os.getenv("AZURE_SEARCH_INDEX_NAME")
@@ -39,7 +40,7 @@ acs = AzureSearch(azure_search_endpoint=os.getenv('AZURE_SEARCH_SERVICE_ENDPOINT
                  embedding_function=embeddings.embed_query)
 
 #create retriever: retrieving relevant documents for query
-retriever = AzureCognitiveSearchRetriever(service_name="jonassearch",api_key=cogkey,index_name=index_name, content_key="line", top_k=3)
+retriever = AzureCognitiveSearchRetriever(service_name=service_name,api_key=cogkey,index_name=index_name, content_key="line", top_k=3)
 
 def get_doc_azure_ai(prompt):
     return [doc.page_content for doc in retriever.get_relevant_documents(prompt)]

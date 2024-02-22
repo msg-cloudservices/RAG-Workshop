@@ -13,6 +13,7 @@ This repo contains an example of retrieval augmented generation (RAG) using Chat
     CHAT_DEPLOYMENT_NAME = "gpt-35-turbo"
 
     AZURE_SEARCH_SERVICE_ENDPOINT='your Azure AI Search Service endpoint'
+    AZURE_SEARCH_NAME = "your Azure AI Search Name"
     AZURE_SEARCH_INDEX_NAME = 'your indexname'
     AZURE_SEARCH_ADMIN_KEY = 'your Azure AI Search Service admin key'
     ```
