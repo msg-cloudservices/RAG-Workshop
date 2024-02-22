@@ -5,6 +5,9 @@ from langchain.chains import LLMChain, ConversationChain
 from langchain.prompts import PromptTemplate
 from langchain.memory import  ChatMessageHistory, ConversationBufferWindowMemory
 import streamlit as st
+import openai
+# from config_openai import *
+from openai import AzureOpenAI
 
 from azure_ai_search import get_doc_azure_ai
 
@@ -17,8 +20,8 @@ azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
 deployment_name='gpt' 
 
 # Load environment variables
-AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
-AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+# AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
+# AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 
 # Initialize the LLM (Language Model) with Azure OpenAI credentials
 llm = AzureChatOpenAI(
@@ -30,34 +33,50 @@ llm = AzureChatOpenAI(
     temperature=0.9,
     )
 
+client = AzureOpenAI(
+  azure_endpoint = azure_endpoint, 
+  api_key=api_key,  
+  api_version="2023-05-15"
+)
+
+def generate_answer(conversation):
+    response = client.chat.completions.create(
+    model="gpt",
+    messages=conversation,
+    temperature=0,
+    max_tokens=1000,
+    top_p=1,
+    frequency_penalty=0,
+    presence_penalty=0,
+    stop = [' END']
+    )
+    return (response.choices[0].message.content).strip()
+
+# conversation = []
+
 # Streamlit UI
 st.title("Let's chat")
 
 # Session state to store chat history
 if 'history' not in st.session_state:
-    st.session_state['history'] = []
+    st.session_state['history'] = [{"role": "system", "content": "Am Anfang jeder Nachricht steht ein Kontext, den du verwendest, um deine Antworten zu erstellen. Du beantwortest hauptsächlich Fragen zu Versicherungsthemen."}]
 
 user_input = st.chat_input("You:", key="input")
 
-# if st.button("Send"):
 if user_input:
-    # Add user input to history
-    st.session_state.history.append(f"Human: {user_input}")
-    # st.text(f"You: {user_input}")
-    
-    # Send the input to the model and get the response
-    # response = llm.generate(user_input, max_tokens=100)
-    conversation = ConversationChain(llm=llm, verbose=True)
+    # get matching text from Azure AI Search and create prompt
     context = "\n".join(get_doc_azure_ai(user_input))
-    messages = "\n\n".join(st.session_state.history)
-
-    rag_messages = f"context: {context}\n\n{messages}"
-    print(rag_messages)
-
-    response = conversation.predict(input=messages)
-    st.session_state.history.append(f"AI: {response}")
-    # st.text(f"ChatGPT: {response}")
+    st.session_state.history.append({"role": "user", "content": f"Context: {context}\n\n{user_input}"})
+    rag_messages = f"context: {context}"
+    
+    # generate response and append it
+    response = generate_answer(st.session_state.history)
+    st.session_state.history.append({"role": "assistant", "content": response})
 
 # Display chat history
 for message in st.session_state.history:
-    st.text(message)
+    if message["role"] == "user":
+        output = message['content'].split('\n\n', 1)
+        st.text(f"You: {output[1]}")
+    if message["role"] == "assistant":
+        st.text(f"ChatGPT: {message['content']}")
