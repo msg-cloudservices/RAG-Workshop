@@ -10,7 +10,7 @@ from azure_ai_search import get_doc_azure_ai
 
 
 ########################################################################
-# to run this code simply type `streamlist run ./rag_with_history.py
+# to run this code simply type 'streamlist run ./rag_with_history.py'
 ########################################################################
 
 load_dotenv()
