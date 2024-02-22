@@ -75,6 +75,7 @@ psutil==5.9.8
 pure-eval==0.2.2
 pyarrow==15.0.0
 pycparser==2.21
+pycryptodome==3.15.0
 pydantic==2.6.1
 pydantic_core==2.16.2
 pydeck==0.8.1b0
