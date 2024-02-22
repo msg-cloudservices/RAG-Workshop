@@ -22,7 +22,7 @@ load_dotenv()
 api_key = os.getenv("AZURE_OPENAI_KEY")
 os.environ["OPENAI_API_KEY"]= api_key
 azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-deployment_name='gpt' 
+deployment_name=os.getenv("CHAT_DEPLOYMENT_NAME")
 key = os.getenv("AZURE_SEARCH_ADMIN_KEY")
 
 #initiate AI Searchservice

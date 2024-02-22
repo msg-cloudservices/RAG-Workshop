@@ -9,15 +9,13 @@ import streamlit as st
 
 load_dotenv()
 
-#write name you gave your deployment model
-model="" 
-#write original deployment name here
-deployment_name=""
+#write original deployment name here - since your deployment-name has to be the same as the original, you can use CHAT_DEPLOYMENT_NAME here
+deployment_name=os.getenv("CHAT_DEPLOYMENT_NAME")
 
 #importing Azure OpenAI creds
 api_key = os.getenv("AZURE_OPENAI_KEY")
 azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-model=model
+model=os.getenv("CHAT_DEPLOYMENT_NAME")
 
 #create instance of AzureOpenAI
 llm = AzureChatOpenAI(
@@ -41,3 +39,8 @@ if prompt:
    response = conversation.predict(input=prompt)
    
    st.write(response)
+
+
+# to run this script, open a terminal and type: streamlit run .\quickstart-scripts\simple_qna_app.py
+
+# if you want to stop the script, run Ctrl C 
