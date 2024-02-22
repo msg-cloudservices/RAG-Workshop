@@ -5,12 +5,13 @@ from langchain.chains import LLMChain, ConversationChain
 from langchain.prompts import PromptTemplate
 from langchain.memory import ChatMessageHistory, ConversationBufferWindowMemory
 import streamlit as st
-import openai
-
-# from config_openai import *
 from openai import AzureOpenAI
-
 from azure_ai_search import get_doc_azure_ai
+
+
+########################################################################
+# to run this code simply type `streamlist run ./rag_with_history.py
+########################################################################
 
 load_dotenv()
 
@@ -19,10 +20,6 @@ api_key = os.getenv("AZURE_OPENAI_KEY")
 os.environ["OPENAI_API_KEY"] = api_key
 azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
 deployment_name = "gpt"
-
-# Load environment variables
-# AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
-# AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 
 # Initialize the LLM (Language Model) with Azure OpenAI credentials
 llm = AzureChatOpenAI(
@@ -52,8 +49,6 @@ def generate_answer(conversation):
     )
     return (response.choices[0].message.content).strip()
 
-
-# conversation = []
 
 # Streamlit UI
 st.title("Let's chat")
