@@ -5,7 +5,7 @@ This repo contains an example of retrieval augmented generation (RAG) using Chat
 
 1. Create an Azure OpenAI Resource
 2. Create an Azure AI Search Resource
-3. Create `.env`-file in scripts directory and add the following environment variables:
+3. Create `.env`-file in root directory of your project and add the following environment variables:
     ```python 
     AZURE_OPENAI_KEY ="your AzureOpenAI key" 
     AZURE_OPENAI_ENDPOINT ="your AzureOpenAI endpoint"
